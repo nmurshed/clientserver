@@ -30,7 +30,8 @@ void main(){
 		exit(0);
 	}
 
-	recv(clientSocket,buffer,sizeof(buffer),0);
+	int n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
+	if(n>0) buffer[n]='\0';
 	printf("DATA : %s\n",buffer );
 
 	return; 			

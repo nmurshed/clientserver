@@ -91,7 +91,7 @@ void* connection_handler(void* socket){
 	int readSize;
 	char* message;
 	char clientMessage[1024];
-	message="Welcome to server\n";
+	message="Welcome to server";
 	write(sock,message,strlen(message));
 	while(readSize=recv(sock,clientMessage,1024,0)){
 		write(sock,processRequest(clientMessage),strlen(clientMessage));
