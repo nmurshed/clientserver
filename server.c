@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 //Networking header files 
 #include <sys/socket.h>
@@ -47,6 +48,7 @@ int main(void){
 		perror("Failed to create socket \n");
 		exit(0);
 	}
+	printf("Socket created \n");
 
 	memset(&serverAdd,'\0',sizeof(serverAdd));
 	serverAdd.sin_family = AF_INET;
@@ -57,16 +59,24 @@ int main(void){
 		perror("Bind Failed \n")
 		exit(0);
 	}
+	printf("Bind to socket\n");
 
 	listen(sockfd,CLIENTS);
+	printf("Listening...\n");
 	addr_size=sizeof(newAdd);
 
-	newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size);
-	if(newSocket<0){
-		perror("accept Failed");
+	while(1){
+		newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size);
+		if(newSocket<0){
+			perror("accept Failed");
+		}else{
+			strcpy(buffer,"hello");
+			send(newSocket,buffer,strlen(buffer),0);
+			close(newSocket);
+		}
+		
 	}
-	strcpy(buffer,"hello");
-	send(newSocket,buffer,strlen(buffer),0);
+	
 
 	
 
