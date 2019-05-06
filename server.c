@@ -43,18 +43,28 @@ int main(void){
 	char buffer[1024];
 
 	sockfd=socket(PF_INET,SOCK_STREAM,0);
+	if(sockfd<0){
+		perror("Failed to create socket \n");
+		exit(0);
+	}
+
 	memset(&serverAdd,'\0',sizeof(serverAdd));
 	serverAdd.sin_family = AF_INET;
 	serverAdd.sin_port = htons(PORT);
 	serverAdd.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-	bind(sockfd,(struct sockaddr*)&serverAdd, sizeof(serverAdd));
+	if(bind(sockfd,(struct sockaddr*)&serverAdd, sizeof(serverAdd))){
+		perror("Bind Failed \n")
+		exit(0);
+	}
 
 	listen(sockfd,CLIENTS);
 	addr_size=sizeof(newAdd);
 
 	newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size);
-
+	if(newSocket<0){
+		perror("accept Failed");
+	}
 	strcpy(buffer,"hello");
 	send(newSocket,buffer,strlen(buffer),0);
 
