@@ -17,7 +17,7 @@ void main(){
 
 	clientSocket = socket(PF_INET,SOCK_STREAM,0);
 	if(clientSocket<0){
-		perror("Could not create socket \n")
+		perror("Could not create socket \n");
 		exit(0);
 	}
 	memset(&serverAdd,'\0',sizeof(serverAdd));
@@ -33,5 +33,5 @@ void main(){
 	recv(clientSocket,buffer,sizeof(buffer),0);
 	printf("DATA : %s\n",buffer );
 
-			
+	return; 			
 }

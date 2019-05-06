@@ -27,8 +27,10 @@ void init(){
 	pthread_cond_init(&cv,NULL);
 }
 char* processRequest(char* req){
-	char* response;
-	//do something with response 
+	char* response = (char*)malloc(1024*sizeof(char));
+	for(int i=0; i<6;i++)
+		*(response+i)='t';
+	*(response+6)='\0';		
 	return response; 
 }
 
@@ -58,7 +60,7 @@ int main(void){
 	serverAdd.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	if(bind(sockfd,(struct sockaddr*)&serverAdd, sizeof(serverAdd))){
-		perror("Bind Failed \n")
+		perror("Bind Failed \n");
 		exit(0);
 	}
 	printf("Bind to socket\n");
@@ -70,10 +72,10 @@ int main(void){
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
 		pthread_t newThread; 
-		newSock=malloc(1);
+	int*	newSock=malloc(1);
 		*newSock = newSocket;
 		if(pthread_create(&newThread,NULL,connection_handler,(void*)newSock)){
-			perror("Could not create Thread \n")
+			perror("Could not create Thread \n");
 			return 1;
 		}		
 		if(newSocket<0){
@@ -84,19 +86,19 @@ int main(void){
 	return 0;
 }
 
-void* connection_handler(void* *socket){
+void* connection_handler(void* socket){
 	int sock = *(int*)socket;
 	int readSize;
 	char* message;
-	char* clientMessage[1024];
+	char clientMessage[1024];
 	message="Welcome to server\n";
 	write(sock,message,strlen(message));
-	while(readSize=recv(socket,clientMessage,1024,0)){
+	while(readSize=recv(sock,clientMessage,1024,0)){
 		write(sock,processRequest(clientMessage),strlen(clientMessage));
 		memset(clientMessage,'\0',1024);
 	}
 	if(readSize==0){
-		printf("Client Disconnected\n", );
+		printf("Client Disconnected\n");
 		fflush(stdout);
 	}else if(readSize <0){
 		perror("Error Received");
