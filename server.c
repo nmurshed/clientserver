@@ -89,6 +89,7 @@ int main(void){
 void* connection_handler(void* socket){
 	int sock = *(int*)socket;
 	int readSize;
+	sleep(1);
 	char* message;
 	char clientMessage[1024];
 	message="Welcome to server";
