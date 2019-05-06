@@ -32,6 +32,8 @@ char* processRequest(char* req){
 	return response; 
 }
 
+void* connection_handler(void*);
+
 int main(void){
 	init();
 	int sockfd; 
@@ -65,21 +67,40 @@ int main(void){
 	printf("Listening...\n");
 	addr_size=sizeof(newAdd);
 
-	while(1){
-		newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size);
+	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
+		printf("Connection Accepted \n");
+		pthread_t newThread; 
+		newSock=malloc(1);
+		*newSock = newSocket;
+		if(pthread_create(&newThread,NULL,connection_handler,(void*)newSock)){
+			perror("Could not create Thread \n")
+			return 1;
+		}		
 		if(newSocket<0){
 			perror("accept Failed");
-		}else{
-			strcpy(buffer,"hello");
-			send(newSocket,buffer,strlen(buffer),0);
-			close(newSocket);
-		}
-		
+			return 1; 
+		}	
 	}
-	
+	return 0;
+}
 
-	
-
-	
+void* connection_handler(void* *socket){
+	int sock = *(int*)socket;
+	int readSize;
+	char* message;
+	char* clientMessage[1024];
+	message="Welcome to server\n";
+	write(sock,message,strlen(message));
+	while(readSize=recv(socket,clientMessage,1024,0)){
+		write(sock,processRequest(clientMessage),strlen(clientMessage));
+		memset(clientMessage,'\0',1024);
+	}
+	if(readSize==0){
+		printf("Client Disconnected\n", );
+		fflush(stdout);
+	}else if(readSize <0){
+		perror("Error Received");
+	}
+	free(socket);
 	return 0;
 }
