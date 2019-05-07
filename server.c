@@ -94,7 +94,9 @@ void* connection_handler(void* socket){
 	char clientMessage[1024];
 	message="Welcome to server";
 	write(sock,message,strlen(message));
-	while(readSize=recv(sock,clientMessage,1024,0)){
+	while(readSize=recv(sock,clientMessage,sizeof(clientMessage)-1,0)){
+		clientMessage[readSize] ='\0';
+		printf("Request Received : %s\n", clientMessage);		
 		write(sock,processRequest(clientMessage),strlen(clientMessage));
 		memset(clientMessage,'\0',1024);
 	}

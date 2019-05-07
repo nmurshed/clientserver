@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 //Networking header files 
 #include <sys/socket.h>
@@ -34,15 +35,15 @@ void main(){
 	if(n>0) buffer[n]='\0';
 	printf("DATA : %s\n",buffer );
 	memset(buffer,'\0',sizeof(buffer));
-
-	while(1){
+	int k=5; 
+	while((k--) >0){
 		printf("Enter Request \n");
-		memset(buffer,'R',1022);
-		buffer[1023]='\0';
+		memset(buffer,'R',10);
+		buffer[11]='\0';
 
 		if(send(clientSocket,buffer,strlen(buffer),0)<0){
 			printf("Send Failed\n");
-			return 1;
+			return;
 		}
 		memset(buffer,'\0',sizeof(buffer));
 		n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
