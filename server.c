@@ -13,24 +13,37 @@
 //Thread Header files 
 #include <pthread.h>
 
-
+#define NTHREAD 5
 pthread_mutex_t mutex;
-pthread_t tID[2];
-pthread_cond_t cv; 
+pthread_t tID[NTHREAD];
+pthread_cond_t full, empty; 
 
 #define CLIENTS 10
 #define PORT  4455 
+
+
+#define DEBUG 1
 
 struct Request{
 	char* clientMessage; 
 	struct sockaddr_in clientAddress; 
 }ClientRequests[1024];
+int head =0, tail =0; 
+
+
+void* processQueue();
 
 void init(){
-	printf("trying to create a server");
+	printf("trying to create a server \n");
 	pthread_mutex_init(&mutex,NULL);
-	pthread_cond_init(&cv,NULL);
+	pthread_cond_init(&full,NULL);
+	pthread_cond_init(&empty,NULL);
 	//Need to create N threads
+	for(int i=0; i<NTHREAD; i++){
+		if(pthread_create(&tID[i],NULL,processQueue,NULL)){
+			perror("Could not create threads \n");
+		}
+	}
 }
 char* processRequest(char* req){
 	char* response = (char*)malloc(1024*sizeof(char));
@@ -41,6 +54,7 @@ char* processRequest(char* req){
 }
 
 void* connection_handler(void*);
+
 int push(struct Request);
 
 int main(void){
@@ -78,21 +92,20 @@ int main(void){
 	int k=0; 
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
-		pthread_t newThread; 
-		int* newSock=malloc(1);
-		*newSock = newSocket;
-		ClientRequests[k].clientAddress.sin_port = newSocket;
-		ClientRequests[k].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
+		pthread_mutex_lock(&mutex);
+		if((head+1)%1024==tail)
+			pthread_cond_wait(&empty,&mutex);
+		pthread_mutex_lock(&mutex);
+		ClientRequests[head].clientAddress.sin_port = newSocket;
+		ClientRequests[head].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
+		head++; 
+		pthread_cond_signal(&empty);
+		pthread_mutex_unlock(&mutex);
+		if(DEBUG){
+			printf("PortNumber  %d \n", newSocket);
+			printf("ipAddress %s\n",inet_ntoa(newAdd.sin_addr));
+		}
 
-		printf("PortNumber  %d \n", newSocket);
-		printf("ipAddress %s\n",inet_ntoa(newAdd.sin_addr));
-		k++; 
-
-
-		if(pthread_create(&newThread,NULL,connection_handler,(void*)newSock)){
-			perror("Could not create Thread \n");
-			return 1;
-		}		
 		if(newSocket<0){
 			perror("accept Failed");
 			return 1; 
@@ -102,6 +115,10 @@ int main(void){
 }
 
 int push(struct Request req){
+	return 0; 
+}
+
+void* processQueue(){
 	return 0; 
 }
 
