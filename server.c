@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 //Networking header files 
 #include <sys/socket.h>
@@ -20,6 +21,10 @@ pthread_cond_t cv;
 #define CLIENTS 10
 #define PORT  4455 
 
+struct Request{
+	char* clientMessage; 
+	struct sockaddr_in clientAddress; 
+}ClientRequests[1024];
 
 void init(){
 	printf("trying to create a server");
@@ -35,6 +40,7 @@ char* processRequest(char* req){
 }
 
 void* connection_handler(void*);
+int push(struct Request);
 
 int main(void){
 	init();
@@ -68,12 +74,20 @@ int main(void){
 	listen(sockfd,CLIENTS);
 	printf("Listening...\n");
 	addr_size=sizeof(newAdd);
-
+	int k=0; 
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
 		pthread_t newThread; 
-	int*	newSock=malloc(1);
+		int* newSock=malloc(1);
 		*newSock = newSocket;
+		ClientRequests[k].clientAddress.sin_port = newSocket;
+		ClientRequests[k].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
+
+		printf("PortNumber  %d \n", newSocket);
+		printf("ipAddress %s\n",inet_ntoa(newAdd.sin_addr));
+		k++; 
+
+
 		if(pthread_create(&newThread,NULL,connection_handler,(void*)newSock)){
 			perror("Could not create Thread \n");
 			return 1;
@@ -84,6 +98,10 @@ int main(void){
 		}	
 	}
 	return 0;
+}
+
+int push(struct Request req){
+	return 0; 
 }
 
 void* connection_handler(void* socket){
