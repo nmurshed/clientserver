@@ -89,16 +89,29 @@ int main(void){
 	listen(sockfd,CLIENTS);
 	printf("Listening...\n");
 	addr_size=sizeof(newAdd);
-	int k=0; 
+	char tempMessage[1024];
+	int read=0;
+	memset(tempMessage,'\0',sizeof(tempMessage)); 
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
 		pthread_mutex_lock(&mutex);
 		if((head+1)%1024==tail)
 			pthread_cond_wait(&empty,&mutex);
 		pthread_mutex_lock(&mutex);
-		ClientRequests[head].clientAddress.sin_port = newSocket;
-		ClientRequests[head].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
-		head++; 
+		
+	    write(newSocket,"Welcome to server",18);
+	    memset(tempMessage,'\0',sizeof(tempMessage));
+	    read = recv(newSocket,tempMessage,sizeof(tempMessage)-1,0);
+	    tempMessage[read]='\n';
+	    if(read<0)
+	    	perror("Error Received \n");
+	    else{
+	    	strncpy(ClientRequests[head].clientMessage,tempMessage,sizeof(tempMessage));
+	    	ClientRequests[head].clientAddress.sin_port = newSocket;
+			ClientRequests[head].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
+			head++; 
+	    }
+		
 		pthread_cond_signal(&empty);
 		pthread_mutex_unlock(&mutex);
 		if(DEBUG){
