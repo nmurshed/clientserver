@@ -33,24 +33,23 @@ void main(){
 
 	int n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
 	if(n>0) buffer[n]='\0';
-	printf("DATA : %s\n",buffer );
+	printf("Connection Test : %s\n",buffer );
 	memset(buffer,'\0',sizeof(buffer));
-	int k=5; 
-	while((k--) >0){
-		printf("Enter Request \n");
-		memset(buffer,'R',10);
-		buffer[11]='\0';
+	
+	printf("Sending  Request \n");
+	memset(buffer,'R',10);
+	buffer[11]='\0';
 
-		if(send(clientSocket,buffer,strlen(buffer),0)<0){
-			printf("Send Failed\n");
-			return;
-		}
-		memset(buffer,'\0',sizeof(buffer));
-		n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
-		if(n>0) buffer[n]='\0';
-		printf("DATA : %s\n",buffer );
-		memset(buffer,'\0',sizeof(buffer));
+	if(send(clientSocket,buffer,strlen(buffer),0)<0){
+		printf("Send Failed\n");
+		return;
 	}
+		memset(buffer,'\0',sizeof(buffer));
+		//n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
+		//if(n>0) buffer[n]='\0';
+		//printf("DATA : %s\n",buffer );
+		//memset(buffer,'\0',sizeof(buffer));
+	
 
 	close(clientSocket);
 	return; 			

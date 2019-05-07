@@ -25,7 +25,7 @@ pthread_cond_t full, empty;
 #define DEBUG 1
 
 struct Request{
-	char* clientMessage; 
+	char clientMessage[1024]; 
 	struct sockaddr_in clientAddress; 
 }ClientRequests[1024];
 int head =0, tail =0; 
@@ -91,39 +91,48 @@ int main(void){
 	addr_size=sizeof(newAdd);
 	char tempMessage[1024];
 	int read=0;
+	char* welcome = "Passed";
 	memset(tempMessage,'\0',sizeof(tempMessage)); 
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
-		pthread_mutex_lock(&mutex);
-		if((head+1)%1024==tail)
-			pthread_cond_wait(&empty,&mutex);
+		write(newSocket,welcome,sizeof(welcome));
+	    memset(tempMessage,'\0',sizeof(tempMessage));
+
 		pthread_mutex_lock(&mutex);
 		
-	    write(newSocket,"Welcome to server",18);
-	    memset(tempMessage,'\0',sizeof(tempMessage));
+		if((head+1)%1024==tail){
+			printf("Waiting for empty queue\n");
+			pthread_cond_wait(&empty,&mutex);
+		}
+
+
+		//pthread_mutex_lock(&mutex);
+
 	    read = recv(newSocket,tempMessage,sizeof(tempMessage)-1,0);
 	    tempMessage[read]='\n';
 	    if(read<0)
 	    	perror("Error Received \n");
 	    else{
+	    	
 	    	strncpy(ClientRequests[head].clientMessage,tempMessage,sizeof(tempMessage));
-	    	ClientRequests[head].clientAddress.sin_port = newSocket;
-			ClientRequests[head].clientAddress.sin_addr.s_addr = newAdd.sin_addr.s_addr;
+			ClientRequests[head].clientAddress = newAdd;
 			head++; 
+			
 	    }
 		
 		pthread_cond_signal(&empty);
 		pthread_mutex_unlock(&mutex);
 		if(DEBUG){
-			printf("PortNumber  %d \n", newSocket);
-			printf("ipAddress %s\n",inet_ntoa(newAdd.sin_addr));
+			printf("message  %s \n", ClientRequests[head-1].clientMessage);
+			printf("ipAddress %s\n",inet_ntoa(ClientRequests[head-1].clientAddress.sin_addr));
+			printf("portNumber %d\n",ClientRequests[head-1].clientAddress.sin_port);
 		}
-
-		if(newSocket<0){
-			perror("accept Failed");
-			return 1; 
-		}	
 	}
+		if(newSocket==0){
+			perror("Client Disconnected \n");
+			fflush(stdout);
+		}	
+	
 	return 0;
 }
 
