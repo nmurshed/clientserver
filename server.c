@@ -30,6 +30,7 @@ void init(){
 	printf("trying to create a server");
 	pthread_mutex_init(&mutex,NULL);
 	pthread_cond_init(&cv,NULL);
+	//Need to create N threads
 }
 char* processRequest(char* req){
 	char* response = (char*)malloc(1024*sizeof(char));
