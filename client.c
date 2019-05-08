@@ -45,10 +45,10 @@ int main(){
 		return 0;
 	}
 		memset(buffer,'\0',sizeof(buffer));
-		//n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
-		//if(n>0) buffer[n]='\0';
-		//printf("DATA : %s\n",buffer );
-		//memset(buffer,'\0',sizeof(buffer));
+		n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
+		if(n>0) buffer[n]='\0';
+		printf("DATA : %s\n",buffer );
+		memset(buffer,'\0',sizeof(buffer));
 	
 
 	close(clientSocket);

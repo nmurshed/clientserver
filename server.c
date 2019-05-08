@@ -10,10 +10,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
 //Thread Header files 
 #include <pthread.h>
 
 #define NTHREAD 5
+#define BUFFER 100
 pthread_mutex_t mutex;
 pthread_t tID[NTHREAD];
 pthread_cond_t full, empty; 
@@ -27,7 +29,8 @@ pthread_cond_t full, empty;
 struct Request{
 	char clientMessage[1024]; 
 	struct sockaddr_in clientAddress; 
-}ClientRequests[1024];
+	int clientSocket; 
+}ClientRequests[BUFFER];
 int head =0, tail =0; 
 
 
@@ -43,7 +46,16 @@ void init(){
 		if(pthread_create(&tID[i],NULL,processQueue,NULL)){
 			perror("Could not create threads \n");
 		}
+
 	}
+}
+
+void cleanup(){
+	pthread_mutex_destroy(&mutex);
+	pthread_cond_destroy(&full);
+	pthread_cond_destroy(&empty);
+	for(int i=0;i<NTHREAD;i++)
+		pthread_join(tID[i],NULL);
 }
 
 
@@ -57,7 +69,7 @@ int main(void){
 	struct sockaddr_in newAdd; 
 
 	socklen_t addr_size; 
-	char buffer[1024];
+	char buffer[100];
 
 	sockfd=socket(PF_INET,SOCK_STREAM,0);
 	if(sockfd<0){
@@ -86,67 +98,83 @@ int main(void){
 	memset(tempMessage,'\0',sizeof(tempMessage)); 
 
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
-		printf("Connection Accepted \n");
-		write(newSocket,welcome,sizeof(welcome));
-	    memset(tempMessage,'\0',sizeof(tempMessage));
+		printf("Connection Accepted \n");	    
+
+	    if(send(newSocket,welcome,sizeof(welcome),MSG_NOSIGNAL)<0){
+			perror("Send Failed\n");
+			
+			//return 0;
+		}
+		memset(tempMessage,'\0',sizeof(tempMessage));
 
 		pthread_mutex_lock(&mutex);
 		
-		while((head+1)%1024==tail){
+		while((head+1)%BUFFER==tail){
 			printf("Waiting for empty queue\n");
 			pthread_cond_wait(&empty,&mutex);
 		}
 
-
-		//pthread_mutex_lock(&mutex);
-
 	    while(read = recv(newSocket,tempMessage,sizeof(tempMessage)-1,0)){
-	    tempMessage[read]='\n';
+	    tempMessage[read]='\0';
 	    if(read<0){
-	    	perror("Error Received \n");
-	    }else if(read==0){
-	    	perror("Client Disconnected \n");
+	    	printf("Client Disconnected \n");
 			fflush(stdout);
+
 	    }
 	    else{
 	    	
 	    	strncpy(ClientRequests[head].clientMessage,tempMessage,sizeof(tempMessage));
 			ClientRequests[head].clientAddress = newAdd;
-			head=(head+1)%1024; 
+			ClientRequests[head].clientSocket=newSocket;
+			head=(head+1)%BUFFER; 
 			
 	    }
 		
 		pthread_cond_signal(&full);
 		pthread_mutex_unlock(&mutex);
+
 		if(DEBUG){
 			printf("message  %s \n", ClientRequests[head-1].clientMessage);
 			printf("ipAddress %s\n",inet_ntoa(ClientRequests[head-1].clientAddress.sin_addr));
 			printf("portNumber %d\n",ClientRequests[head-1].clientAddress.sin_port);
 		}	
-	}
-
 
 	}
+	}
+
+	cleanup();
 
 	return 0;
+
 }
 
-
+void doSomework(int k ){
+	
+		while(k++ >1);
+		return; 
+}
 
 void* processQueue(){
 	while(1){
+		
+		//doSomework(99999);
+
+		char* response = "Processed";
 		pthread_mutex_lock(&mutex);
 		while(head==tail){
 			printf("waiting to process request\n");
 			pthread_cond_wait(&full,&mutex);
 		}
-
 		printf("Processing : message  %s \n", ClientRequests[tail].clientMessage);
-		printf("Processing :ipAddress %s\n",inet_ntoa(ClientRequests[tail].clientAddress.sin_addr));
+		printf("Processing : ipAddress %s\n",inet_ntoa(ClientRequests[tail].clientAddress.sin_addr));
 		printf("Processing : portNumber %d\n",ClientRequests[tail].clientAddress.sin_port);
 		printf("Processing : Thread ID : %lu \n",pthread_self());
-		tail=(tail+1)%1024; 
-	
+
+		if(send(ClientRequests[tail].clientSocket,ClientRequests[tail].clientMessage,sizeof(ClientRequests[tail].clientMessage),MSG_NOSIGNAL)<0){
+			perror("Send Failed\n");
+			//return 0;
+		}
+		tail=(tail+1)%BUFFER; 
 		pthread_cond_signal(&empty);
 		pthread_mutex_unlock(&mutex);
 	}
