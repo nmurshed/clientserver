@@ -93,6 +93,7 @@ int main(void){
 	int read=0;
 	char* welcome = "Passed";
 	memset(tempMessage,'\0',sizeof(tempMessage)); 
+
 	while(newSocket=accept(sockfd,(struct sockaddr*)&newAdd,&addr_size)){
 		printf("Connection Accepted \n");
 		write(newSocket,welcome,sizeof(welcome));
@@ -108,10 +109,14 @@ int main(void){
 
 		//pthread_mutex_lock(&mutex);
 
-	    read = recv(newSocket,tempMessage,sizeof(tempMessage)-1,0);
+	    while(read = recv(newSocket,tempMessage,sizeof(tempMessage)-1,0)){
 	    tempMessage[read]='\n';
-	    if(read<0)
+	    if(read<0){
 	    	perror("Error Received \n");
+	    }else if(read==0){
+	    	perror("Client Disconnected \n");
+			fflush(stdout);
+	    }
 	    else{
 	    	
 	    	strncpy(ClientRequests[head].clientMessage,tempMessage,sizeof(tempMessage));
@@ -126,13 +131,13 @@ int main(void){
 			printf("message  %s \n", ClientRequests[head-1].clientMessage);
 			printf("ipAddress %s\n",inet_ntoa(ClientRequests[head-1].clientAddress.sin_addr));
 			printf("portNumber %d\n",ClientRequests[head-1].clientAddress.sin_port);
-		}
+		}	
 	}
-		if(newSocket==0){
-			perror("Client Disconnected \n");
-			fflush(stdout);
-		}
-	close(newSocket);	
+
+
+	}
+		
+	
 	
 	return 0;
 }
@@ -142,21 +147,22 @@ int push(struct Request req){
 }
 
 void* processQueue(){
+	while(1){
+		pthread_mutex_lock(&mutex);
+		while(head==tail){
+			printf("waiting to process request\n");
+			pthread_cond_wait(&full,&mutex);
+		}
 
-	pthread_mutex_lock(&mutex);
-	while(head==tail){
-		printf("waiting to process request\n");
-		pthread_cond_wait(&full,&mutex);
-	}
-
-	printf("Processing : message  %s \n", ClientRequests[tail].clientMessage);
-	printf("Processing :ipAddress %s\n",inet_ntoa(ClientRequests[tail].clientAddress.sin_addr));
-	printf("Processing : portNumber %d\n",ClientRequests[tail].clientAddress.sin_port);
-	printf("Processing : Thread ID : %lu \n",pthread_self());
-	tail=(tail+1)%1024; 
+		printf("Processing : message  %s \n", ClientRequests[tail].clientMessage);
+		printf("Processing :ipAddress %s\n",inet_ntoa(ClientRequests[tail].clientAddress.sin_addr));
+		printf("Processing : portNumber %d\n",ClientRequests[tail].clientAddress.sin_port);
+		printf("Processing : Thread ID : %lu \n",pthread_self());
+		tail=(tail+1)%1024; 
 	
-	pthread_cond_signal(&empty);
-	pthread_mutex_unlock(&mutex);
+		pthread_cond_signal(&empty);
+		pthread_mutex_unlock(&mutex);
+	}
 	return 0; 
 }
 

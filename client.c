@@ -11,7 +11,7 @@
 
 #define PORT 4455
 
-void main(){
+int main(){
 	int clientSocket;
 	struct sockaddr_in serverAdd; 
 	char buffer[1024];
@@ -42,7 +42,7 @@ void main(){
 
 	if(send(clientSocket,buffer,strlen(buffer),0)<0){
 		printf("Send Failed\n");
-		return;
+		return 0;
 	}
 		memset(buffer,'\0',sizeof(buffer));
 		//n=recv(clientSocket,buffer,sizeof(buffer)-1,0);
@@ -52,5 +52,5 @@ void main(){
 	
 
 	close(clientSocket);
-	return; 			
+	return 0; 			
 }
