@@ -22,7 +22,7 @@ pthread_cond_t full, empty;
 #define PORT  4455 
 
 
-#define DEBUG 1
+#define DEBUG 0
 
 struct Request{
 	char clientMessage[1024]; 
@@ -100,7 +100,7 @@ int main(void){
 
 		pthread_mutex_lock(&mutex);
 		
-		if((head+1)%1024==tail){
+		while((head+1)%1024==tail){
 			printf("Waiting for empty queue\n");
 			pthread_cond_wait(&empty,&mutex);
 		}
@@ -116,11 +116,11 @@ int main(void){
 	    	
 	    	strncpy(ClientRequests[head].clientMessage,tempMessage,sizeof(tempMessage));
 			ClientRequests[head].clientAddress = newAdd;
-			head++; 
+			head=(head+1)%1024; 
 			
 	    }
 		
-		pthread_cond_signal(&empty);
+		pthread_cond_signal(&full);
 		pthread_mutex_unlock(&mutex);
 		if(DEBUG){
 			printf("message  %s \n", ClientRequests[head-1].clientMessage);
@@ -131,7 +131,8 @@ int main(void){
 		if(newSocket==0){
 			perror("Client Disconnected \n");
 			fflush(stdout);
-		}	
+		}
+	close(newSocket);	
 	
 	return 0;
 }
@@ -141,6 +142,21 @@ int push(struct Request req){
 }
 
 void* processQueue(){
+
+	pthread_mutex_lock(&mutex);
+	while(head==tail){
+		printf("waiting to process request\n");
+		pthread_cond_wait(&full,&mutex);
+	}
+
+	printf("Processing : message  %s \n", ClientRequests[tail].clientMessage);
+	printf("Processing :ipAddress %s\n",inet_ntoa(ClientRequests[tail].clientAddress.sin_addr));
+	printf("Processing : portNumber %d\n",ClientRequests[tail].clientAddress.sin_port);
+	printf("Processing : Thread ID : %lu \n",pthread_self());
+	tail=(tail+1)%1024; 
+	
+	pthread_cond_signal(&empty);
+	pthread_mutex_unlock(&mutex);
 	return 0; 
 }
 
